@@ -1,0 +1,47 @@
+name: Actualizar dashboard
+on:
+  schedule:
+    - cron: "0 11 * * *"   # 08:00 Argentina
+    - cron: "0 20 * * *"   # 17:00 Argentina
+  workflow_dispatch:        # permite correrlo a mano
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install tuya-connector-python
+      - name: Generar dashboard
+        run: python buscador_camaras.py
+        env:
+          TUYA_ACCESS_ID: ${{ secrets.TUYA_ACCESS_ID }}
+          TUYA_ACCESS_KEY: ${{ secrets.TUYA_ACCESS_KEY }}
+          TUYA_UIDS: ${{ secrets.TUYA_UIDS }}
+      - name: Proteger con contraseña
+        run: |
+          mkdir site
+          npx -y staticrypt buscador.html -p "$DASH_PASSWORD" --short -d site
+          mv site/buscador.html site/index.html
+        env:
+          DASH_PASSWORD: ${{ secrets.DASH_PASSWORD }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4
