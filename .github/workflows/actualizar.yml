@@ -30,6 +30,7 @@ jobs:
           TUYA_ACCESS_KEY: ${{ secrets.TUYA_ACCESS_KEY }}
           TUYA_UIDS: ${{ secrets.TUYA_UIDS }}
           HIST_KEY: ${{ secrets.HIST_KEY }}
+          MONDAY_TOKEN: ${{ secrets.MONDAY_TOKEN }}
           DASH_PASSWORD: ${{ secrets.DASH_PASSWORD }}
       - name: Guardar historial cifrado
         run: |
