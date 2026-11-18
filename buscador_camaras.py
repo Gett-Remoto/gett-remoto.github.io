@@ -22,7 +22,7 @@ UIDS       = [u.strip() for u in os.environ["TUYA_UIDS"].split(",") if u.strip()
 DIAS_LOG   = 7      # cuántos días atrás guarda Tuya los eventos (se suman al historial propio)
 HORAS_BARRIDO = 20  # cada cuántas horas se piden los eventos de TODAS las cámaras
 HILOS      = 5      # consultas en paralelo (si Tuya da error de límite, bajalo a 2)
-LOGOS      = ["logo.png", "logo.svg", "logo.jpg", "logo.jpeg"]
+LOGOS      = ["logo-blanco.png", "logo.png", "logo.svg", "logo.jpg", "logo.jpeg"]
 # ==============================================================================
 
 print("1. Conectando a Tuya...")
@@ -212,8 +212,9 @@ b{font-weight:600}
 
 /* ---------- Navegación ---------- */
 .side{position:fixed;top:0;bottom:0;left:0;width:232px;background:var(--brand);display:flex;flex-direction:column;padding:22px 12px 16px;z-index:20}
-.brand{display:flex;align-items:center;gap:10px;padding:0 10px 26px}
-.brand img{height:28px;display:block}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 12px 28px}
+.brand b{padding-bottom:6px}
+.brand img{height:36px;display:block}
 .logo-txt{font-size:28px;font-weight:700;font-style:italic;color:#fff;letter-spacing:-1px}
 .brand b{color:var(--acc);font-weight:600;font-size:15px}
 .nav{display:flex;flex-direction:column;gap:2px}
@@ -303,7 +304,8 @@ td:first-child{font-weight:500}
 /* ---------- Celular ---------- */
 @media(max-width:860px){
   .mtop{display:flex;position:sticky;top:0;z-index:15;background:var(--brand);height:56px;padding:0 16px;align-items:center;justify-content:space-between;color:#bdb8e3;font-size:12px}
-  .mtop .brand{padding:0}
+  .mtop .brand{padding:0;align-items:center}
+  .mtop .brand img{height:26px}
   .side{top:auto;width:auto;right:0;flex-direction:row;padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(22,22,46,.12)}
   .side > .brand,.side .foot{display:none}
   .nav{flex-direction:row;width:100%;gap:0}
