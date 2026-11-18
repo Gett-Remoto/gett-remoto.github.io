@@ -191,87 +191,181 @@ else:
 # ---------- Paso 3: generar HTML ----------
 HTML = """<!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"><title>Gett Remoto</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f1650">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+:root{
+  --bg:#f4f5f9;--card:#fff;--ink:#16162e;--ink2:#51566e;--mut:#8f94aa;--line:#e6e7ef;--line2:#f0f1f6;
+  --brand:#1f1650;--acc:#ff7a00;
+  --ok:#16a34a;--ok-ink:#15803d;--ok-soft:#e7f6ec;
+  --bad:#dc2626;--bad-ink:#b91c1c;--bad-soft:#fdeceb;
+  --warn:#d97706;--warn-ink:#b45309;--warn-soft:#fdf3e1;
+  --pat:#5b47c7;--pat-soft:#eeebfc;
+  --r:14px;--sh:0 1px 2px rgba(22,22,46,.04),0 2px 6px rgba(22,22,46,.04);
+}
 *{box-sizing:border-box}
-body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:#f9fafc;color:#1b1b3a}
-.top{position:fixed;top:0;left:0;right:0;height:60px;background:#1f1650;display:flex;align-items:center;justify-content:space-between;padding:0 24px;color:#cfcaf0;z-index:10;font-size:14px}
-.brand{display:flex;align-items:center;gap:12px}
-.brand img{height:34px}
-.logo-txt{font-size:32px;font-weight:700;font-style:italic;color:#fff;letter-spacing:-1px}
-.brand b{color:#ff7a00;font-size:16px}
-.side{position:fixed;top:60px;bottom:0;left:0;width:256px;background:#1f1650;padding:12px 8px}
-.side a{display:block;padding:10px 12px;border-radius:8px;color:#fff;cursor:pointer;margin-bottom:4px;font-size:15px}
-.side a:hover{background:#2a1f6b}
-.side a.act{background:#34296e;color:#ff7a00;font-weight:700}
-main{margin-left:256px;padding:84px 40px 40px;max-width:1700px}
-h1{margin:0;font-size:28px}
-.sub{color:#4a5578;margin:2px 0 22px;font-size:15px}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-.kpi{background:#fff;border:1px solid #e6e8f0;border-radius:14px;padding:18px 20px}
-.kpi .l{color:#4a5578;font-size:14px}
-.kpi .v{font-size:36px;font-weight:700;margin-top:4px}
-.kpi .bar{height:8px;background:#e9ebf3;border-radius:6px;margin-top:10px;overflow:hidden}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font:14px/1.45 Inter,"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
+b{font-weight:600}
+
+/* ---------- Navegación ---------- */
+.side{position:fixed;top:0;bottom:0;left:0;width:232px;background:var(--brand);display:flex;flex-direction:column;padding:22px 12px 16px;z-index:20}
+.brand{display:flex;align-items:center;gap:10px;padding:0 10px 26px}
+.brand img{height:28px;display:block}
+.logo-txt{font-size:28px;font-weight:700;font-style:italic;color:#fff;letter-spacing:-1px}
+.brand b{color:var(--acc);font-weight:600;font-size:15px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#bdb8e3;cursor:pointer;font-weight:500;font-size:14px;transition:background .15s,color .15s;-webkit-tap-highlight-color:transparent}
+.nav a svg{width:18px;height:18px;flex:none}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.act{background:rgba(255,255,255,.11);color:#fff}
+.nav a.act svg{color:var(--acc)}
+.nav .cnt{margin-left:auto;font-size:11.5px;font-weight:600;min-width:22px;text-align:center;padding:1px 7px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff}
+.nav .cnt.r{background:var(--bad)}
+.nav .cnt.a{background:var(--acc)}
+.nav .cnt:empty{display:none}
+.nav .s{display:none}
+.side .foot{margin-top:auto;padding:14px 12px 0;color:#8f89c4;font-size:12px;border-top:1px solid rgba(255,255,255,.08);line-height:1.5}
+.side .foot b{color:#d9d5f5;font-weight:500;display:block}
+.mtop{display:none}
+
+/* ---------- Contenido ---------- */
+main{margin-left:232px;padding:30px 36px 56px;max-width:1660px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 20px;margin-bottom:22px;flex-wrap:wrap}
+h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.4px}
+.sub{color:var(--ink2);margin:4px 0 0;font-size:14px;max-width:900px}
+section > .sub{margin:-8px 0 18px}
+.stamp{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:999px;white-space:nowrap}
+.stamp i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+h2{font-size:16px;font-weight:600;margin:30px 0 12px;letter-spacing:-.1px}
+h2 + .sub{margin:-6px 0 14px}
+
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh);min-width:0}
+.kpi .l{color:var(--ink2);font-size:13px;font-weight:500}
+.kpi .v{font-size:30px;font-weight:700;margin-top:6px;letter-spacing:-.6px;line-height:1.15}
+.kpi .bar{height:6px;background:var(--line2);border-radius:6px;margin-top:12px;overflow:hidden}
 .kpi .bar i{display:block;height:100%;border-radius:6px}
-.ok{color:#1b9a4a}.bad{color:#d32f2f}.warn{color:#e08a00}
-h2{font-size:20px;margin:0 0 12px}
-.filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-input,select{padding:10px 14px;font-size:14px;background:#fff;color:#1b1b3a;border:1px solid #cfd3e3;border-radius:999px;outline:none}
-input{flex:1;min-width:280px}
-input:focus,select:focus{border-color:#ff7a00}
-#cuenta{color:#4a5578;margin:8px 0}
-.wrap{background:#fff;border:1px solid #e6e8f0;border-radius:14px;overflow:auto;max-height:68vh}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th{background:#1f1650;color:#fff;text-align:left;padding:10px 12px;position:sticky;top:0;white-space:nowrap;cursor:pointer;user-select:none}
-th:hover{background:#34296e}
-th .fl{color:#ff7a00}
-td{padding:9px 12px;border-bottom:1px solid #eef0f6;white-space:nowrap}
-tr:hover td{background:#f4f2ff}
-.chip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:700}
-.c-on{background:#e3f6e8;color:#1b7a3a}.c-off{background:#fde8e8;color:#c62828}.c-sd{background:#fff1d6;color:#a86400}
-.mut{color:#8a93b2}
-.mini{color:#8a93b2;font-size:12.5px;margin-top:6px}
-.card{background:#fff;border:1px solid #e6e8f0;border-radius:14px;padding:18px 20px;margin-bottom:16px}
-.card h3{margin:0 0 12px;font-size:16px}
-.grid2{display:grid;grid-template-columns:3fr 2fr;gap:16px}
-.ley{display:flex;gap:16px;font-size:13px;color:#4a5578;margin-bottom:8px}
-.ley i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
-.horas{display:flex;align-items:flex-end;gap:3px;height:180px;border-bottom:1px solid #e6e8f0}
+.ok{color:var(--ok-ink)}.bad{color:var(--bad-ink)}.warn{color:var(--warn-ink)}
+.mut{color:var(--mut)}
+.mini{color:var(--mut);font-size:12.5px;margin-top:6px}
+
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+input,select{height:38px;padding:0 14px;font:inherit;font-size:13.5px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;outline:none;transition:border-color .15s,box-shadow .15s}
+input{flex:1;min-width:260px;padding-left:38px;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238f94aa' stroke-width='2' stroke-linecap='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 13px 50%}
+select{-webkit-appearance:none;appearance:none;padding-right:34px;cursor:pointer;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2351566e' stroke-width='2.2' stroke-linecap='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center}
+input:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft,#fff1e3)}
+#cuenta{color:var(--mut);margin:4px 2px 10px;font-size:12.5px}
+
+.wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:auto;max-height:70vh;box-shadow:var(--sh)}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px}
+th{background:#fafbfd;color:var(--ink2);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.45px;text-align:left;padding:11px 14px;position:sticky;top:0;z-index:1;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--line)}
+th:hover{color:var(--ink)}
+th .fl{color:var(--acc)}
+td{padding:11px 14px;border-bottom:1px solid var(--line2);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:#fafaff}
+td:first-child{font-weight:500}
+
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;line-height:1.6;white-space:nowrap}
+.c-on{background:var(--ok-soft);color:var(--ok-ink)}
+.c-off{background:var(--bad-soft);color:var(--bad-ink)}
+.c-sd{background:var(--warn-soft);color:var(--warn-ink)}
+.chip.c-pat{background:var(--pat-soft);color:var(--pat)}
+.c-on::before,.c-off::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:14px;box-shadow:var(--sh);min-width:0}
+.card h3{margin:0 0 14px;font-size:14.5px;font-weight:600}
+.grid2{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px}
+.ley{display:flex;gap:16px;font-size:12.5px;color:var(--ink2);margin-bottom:10px;flex-wrap:wrap}
+.ley i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px}
+.horas{display:flex;align-items:flex-end;gap:3px;height:180px;border-bottom:1px solid var(--line);margin-bottom:24px}
 .horas .h{flex:1;display:flex;gap:1px;align-items:flex-end;height:100%;position:relative}
 .horas .h b{flex:1;border-radius:3px 3px 0 0;min-height:1px}
-.horas .h span{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:11px;color:#8a93b2}
-.horas{margin-bottom:24px}
-.tr{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13.5px}
-.tr .n{width:80px;color:#4a5578}.tr .b{flex:1;background:#f0f1f7;border-radius:6px;height:18px;overflow:hidden}
-.tr .b i{display:block;height:100%;background:#3e299b;border-radius:6px}.tr .c{width:50px;text-align:right;font-weight:700}
-.calor{display:grid;grid-template-columns:44px repeat(24,1fr);gap:2px;font-size:11px;color:#4a5578}
+.horas .h span{position:absolute;bottom:-20px;left:-4px;right:-4px;text-align:center;font-size:11px;color:var(--mut)}
+.tr{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px}
+.tr .n{width:80px;color:var(--ink2);flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr .b{flex:1;background:var(--line2);border-radius:6px;height:16px;overflow:hidden;min-width:0}
+.tr .b i{display:block;height:100%;background:var(--pat);border-radius:6px}
+.tr .c{width:44px;text-align:right;font-weight:600}
+.calor{display:grid;grid-template-columns:38px repeat(24,minmax(0,1fr));gap:2px;font-size:11px;color:var(--ink2)}
 .calor div{height:22px;border-radius:3px;display:flex;align-items:center;justify-content:center}
-.chip.c-pat{background:#efe9ff;color:#3e299b}
-.lectura{border-left:5px solid #ff7a00}
-.lectura p{margin:0 0 12px;line-height:1.55;font-size:14.5px;max-width:1100px}
-.lectura p b.t{display:block;color:#1f1650;margin-bottom:2px}
+.lectura{border-left:4px solid var(--acc);background:linear-gradient(90deg,#fffaf5,var(--card) 240px)}
+.lectura p{margin:0 0 12px;line-height:1.6;font-size:14px;max-width:1100px;color:#2c2f45}
+.lectura p b.t{display:block;color:var(--ink);margin-bottom:2px}
 .lectura p:last-child{margin-bottom:0}
-@media(max-width:1100px){.grid2{grid-template-columns:1fr}}
-@media(max-width:900px){.side{display:none}main{margin-left:0;padding:84px 16px}.kpis{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- Tablet ---------- */
+@media(max-width:1200px){.grid2{grid-template-columns:minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---------- Celular ---------- */
+@media(max-width:860px){
+  .mtop{display:flex;position:sticky;top:0;z-index:15;background:var(--brand);height:56px;padding:0 16px;align-items:center;justify-content:space-between;color:#bdb8e3;font-size:12px}
+  .mtop .brand{padding:0}
+  .side{top:auto;width:auto;right:0;flex-direction:row;padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(22,22,46,.12)}
+  .side > .brand,.side .foot{display:none}
+  .nav{flex-direction:row;width:100%;gap:0}
+  .nav a{flex:1;flex-direction:column;gap:4px;padding:7px 2px;font-size:10.5px;font-weight:500;position:relative;border-radius:8px;min-width:0}
+  .nav a svg{width:21px;height:21px}
+  .nav a.act{background:none}
+  .nav a.act span.s{color:#fff;font-weight:600}
+  .nav .l{display:none}.nav .s{display:block;white-space:nowrap}
+  .nav .cnt{position:absolute;top:1px;left:calc(50% + 5px);margin:0;font-size:10px;min-width:18px;padding:0 5px;line-height:16px}
+  main{margin-left:0;padding:20px 16px calc(96px + env(safe-area-inset-bottom))}
+  .head .stamp{display:none}
+  h1{font-size:21px}
+  .kpis{gap:10px;margin-bottom:18px}
+  .kpi{padding:13px 14px}
+  .kpi .v{font-size:25px}
+  .kpi .l{font-size:12.5px}
+  .filtros input{min-width:0;flex-basis:100%}
+  .filtros select{flex:1 1 40%;min-width:0}
+  .card{padding:16px}
+  .calor{grid-template-columns:30px repeat(24,minmax(0,1fr));gap:1px;font-size:9.5px}
+  .calor div{height:16px}
+  .tr .n{width:110px!important}
+  /* las tablas pasan a tarjetas */
+  .wrap{max-height:none;overflow:visible;background:none;border:0;box-shadow:none;border-radius:0}
+  .wrap table,.wrap tbody,.wrap tr,.wrap td{display:block;width:100%}
+  .wrap thead{display:none}
+  .wrap tr{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 14px;margin-bottom:10px;box-shadow:var(--sh)}
+  .wrap td{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:6px 0;border:0;white-space:normal!important;min-width:0!important;text-align:right;word-break:break-word}
+  .wrap td::before{content:attr(data-l);color:var(--mut);font-size:12px;text-align:left;flex:none;max-width:45%}
+  .wrap td:first-child{font-weight:600;font-size:15px;text-align:left;padding:8px 0;border-bottom:1px solid var(--line2);margin-bottom:4px}
+  .wrap td:first-child::before{display:none}
+  .wrap td > .v{min-width:0}
+  .wrap td.largo{display:block;text-align:left}
+  .wrap td.largo::before{display:block;max-width:none;margin-bottom:3px}
+  .wrap .chip{white-space:normal;line-height:1.35;padding:3px 10px;text-align:left}
+  #tb td:nth-child(2),#tb td:nth-child(6),#tb td:nth-child(9){display:none}
+  .wrap td[colspan]{justify-content:center}.wrap td[colspan]::before{display:none}
+  tbody tr:hover td{background:none}
+}
 </style></head><body>
 
-<div class="top">
-  <div class="brand">__LOGO__<b>Remoto</b></div>
-  <div>Datos al: __FECHA__</div>
-</div>
+<div class="mtop"><div class="brand">__LOGO__<b>Remoto</b></div><div>Datos al __FECHA__</div></div>
 
 <div class="side">
-  <a id="v-todas" class="act" onclick="vista('todas')">Todas las cámaras</a>
-  <a id="v-off" onclick="vista('off')">Offline</a>
-  <a id="v-sd" onclick="vista('sd')">Problemas de SD</a>
-  <a id="v-stats" onclick="vista('stats')">Estadísticas</a>
-  <a id="v-inc" onclick="vista('inc')">Incidencias</a>
+  <div class="brand">__LOGO__<b>Remoto</b></div>
+  <nav class="nav">
+    <a id="v-todas" class="act" onclick="vista('todas')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 10 4.6-2.3a1 1 0 0 1 1.4.9v6.8a1 1 0 0 1-1.4.9L16 14"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg><span class="l">Todas las cámaras</span><span class="s">Cámaras</span></a>
+    <a id="v-off" onclick="vista('off')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 5.2-2.8M19 12.9a10 10 0 0 0-2.3-1.6M2 8.8a15 15 0 0 1 4.2-2.7M22 8.8A15 15 0 0 0 10.7 5M12 20h.01"/></svg><span class="l">Offline</span><span class="s">Offline</span><span class="cnt r" id="nOff"></span></a>
+    <a id="v-sd" onclick="vista('sd')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM9 6v3M12 6v3M15 7v2"/></svg><span class="l">Problemas de SD</span><span class="s">SD</span><span class="cnt a" id="nSd"></span></a>
+    <a id="v-stats" onclick="vista('stats')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 17v-5M13 17V8M18 17v-3"/></svg><span class="l">Estadísticas</span><span class="s">Estadísticas</span></a>
+    <a id="v-inc" onclick="vista('inc')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M12 11v3M12 17h.01"/></svg><span class="l">Incidencias</span><span class="s">Incidencias</span><span class="cnt a" id="nInc"></span></a>
+  </nav>
+  <div class="foot"><b>Datos al __FECHA__</b>Se actualiza a las 8:00 y 13:00</div>
 </div>
 
 <main>
-  <h1>Gett Remoto</h1>
-  <p class="sub">Estado de las cámaras por punto de venta</p>
+  <div class="head">
+    <div><h1 id="titulo">Todas las cámaras</h1><p class="sub" id="subtit">Estado de cada cámara por punto de venta</p></div>
+    <span class="stamp"><i></i>Datos al __FECHA__</span>
+  </div>
 
+  <section id="secCam">
   <div class="kpis">
     <div class="kpi"><div class="l">Total de cámaras</div><div class="v" id="kTotal"></div></div>
     <div class="kpi"><div class="l">Online</div><div class="v ok" id="kOn"></div></div>
@@ -279,9 +373,6 @@ tr:hover td{background:#f4f2ff}
     <div class="kpi"><div class="l">Disponibilidad</div><div class="v" id="kPct"></div>
       <div class="bar"><i id="kBar"></i></div></div>
   </div>
-
-  <section id="secCam">
-  <h2>Cámaras</h2>
   <div class="filtros">
     <input id="q" placeholder="Buscar por nombre, ID, modelo o locación...">
     <select id="fEstado"><option value="">Estado: todos</option><option value="on">Online</option><option value="off">Offline</option></select>
@@ -305,29 +396,28 @@ tr:hover td{background:#f4f2ff}
   </section>
 
   <section id="secStats" hidden>
-  <h2>Estadísticas de conexión</h2>
   <p class="sub" id="sDesde"></p>
   <div class="card lectura"><h3>Lectura de los datos</h3><div id="sAnalisis"></div></div>
   <div class="kpis">
     <div class="kpi"><div class="l">Cortes reales (10 min o más)</div><div class="v" id="sCortes"></div><div class="mini" id="sVueltas"></div></div>
-    <div class="kpi"><div class="l">Tiempo típico en volver (mediana)</div><div class="v" id="sMed"></div><div class="mini" id="sRap"></div></div>
+    <div class="kpi"><div class="l">Tiempo típico en volver</div><div class="v" id="sMed"></div><div class="mini" id="sRap"></div></div>
     <div class="kpi"><div class="l">Cortes por horario del local</div><div class="v warn" id="sNoct"></div><div class="mini">se apaga de noche y vuelve al abrir</div></div>
     <div class="kpi"><div class="l">Cámaras con patrón repetido</div><div class="v" id="sPat"></div><div class="mini" id="sMicro"></div></div>
   </div>
   <div class="grid2">
-    <div class="card"><h3>¿A qué hora se cortan y a qué hora vuelven? <span class="mut" style="font-weight:400;font-size:13px">(cortes de 10 min o más)</span></h3>
-      <div class="ley"><span><i style="background:#d32f2f"></i>Se desconecta</span><span><i style="background:#1b9a4a"></i>Vuelve a conectarse</span></div>
+    <div class="card"><h3>¿A qué hora se cortan y a qué hora vuelven? <span class="mut" style="font-weight:400;font-size:12.5px">(cortes de 10 min o más)</span></h3>
+      <div class="ley"><span><i style="background:#dc2626"></i>Se desconecta</span><span><i style="background:#16a34a"></i>Vuelve a conectarse</span></div>
       <div id="gHoras" class="horas"></div></div>
     <div class="card"><h3>¿Cuánto tardan en volver?</h3><div id="gTramos"></div></div>
   </div>
   <div class="card"><h3>Desconexiones por día y hora</h3><div id="gCalor"></div></div>
-  <h2 style="margin-top:24px">Sucursales con problema de internet o energía</h2>
+  <h2>Sucursales con problema de internet o energía</h2>
   <p class="sub">Sucursales donde las cámaras se caen <b>todas a la vez</b> (con menos de 3 minutos de diferencia). Cuando pasa seguido, el problema es del local y no de la cámara.</p>
   <div class="wrap" style="max-height:52vh"><table><thead><tr>
     <th>Locación</th><th>Cámaras</th><th>Cortes juntos</th><th>% de coincidencia</th>
     <th>En horario de atención</th><th>De noche</th><th>Micro-cortes juntos</th><th>Ahora</th><th>Diagnóstico</th>
   </tr></thead><tbody id="sucTb"></tbody></table></div>
-  <h2 style="margin-top:24px">Por cámara</h2>
+  <h2>Por cámara</h2>
   <div class="filtros">
     <input id="sq" placeholder="Buscar por nombre o locación...">
     <select id="sPatF"><option value="">Patrón: todos</option><option value="1">Con patrón</option><option value="off">Offline ahora</option></select>
@@ -349,20 +439,19 @@ tr:hover td{background:#f4f2ff}
   </section>
 
   <section id="secInc" hidden>
-  <h2>Incidencias reportadas (monday)</h2>
   <p class="sub" id="iDesde"></p>
   <div class="card lectura"><h3>Lectura de las incidencias</h3><div id="iAnalisis"></div></div>
   <div class="kpis">
     <div class="kpi"><div class="l">Tickets en el historial</div><div class="v" id="iTotal"></div><div class="mini" id="iSem"></div></div>
     <div class="kpi"><div class="l">Abiertos ahora</div><div class="v warn" id="iAb"></div><div class="mini" id="iOnl"></div></div>
     <div class="kpi"><div class="l">Tiempo típico de resolución</div><div class="v" id="iRes"></div><div class="mini">de la apertura al cierre</div></div>
-    <div class="kpi"><div class="l">"Fuera de línea" en sucursales con mal internet</div><div class="v bad" id="iFl"></div><div class="mini" id="iFl2"></div></div>
+    <div class="kpi"><div class="l">"Fuera de línea" con mal internet</div><div class="v bad" id="iFl"></div><div class="mini" id="iFl2"></div></div>
   </div>
   <div class="grid2">
     <div class="card"><h3>¿Qué reportan los agentes de calidad?</h3><div id="gCats"></div></div>
     <div class="card"><h3>Tickets por mes</h3><div id="gMeses"></div></div>
   </div>
-  <h2 style="margin-top:8px">Por sucursal</h2>
+  <h2>Por sucursal</h2>
   <div class="filtros">
     <input id="iq" placeholder="Buscar sucursal, cliente o texto del reporte...">
     <select id="iF"><option value="">Todas</option><option value="ab">Con tickets abiertos</option><option value="cx">Con problema de conexión</option><option value="rep">4 tickets o más</option></select>
@@ -385,6 +474,16 @@ tr:hover td{background:#f4f2ff}
 const DATA = __DATA__;
 const STATS = __STATS__;
 const $ = id => document.getElementById(id);
+// En el celular las tablas se ven como tarjetas: cada celda lleva el nombre de su columna
+function etiquetar(tb){
+  const ths = [...tb.closest('table').querySelectorAll('thead th')].map(th => th.childNodes[0].textContent.trim());
+  tb.querySelectorAll('tr').forEach(tr => [...tr.children].forEach((td, i) => {
+    td.dataset.l = ths[i] || '';
+    if (td.childNodes.length > 1) td.innerHTML = '<span class="v">' + td.innerHTML + '</span>';
+    if (td.textContent.length > 60) td.classList.add('largo');
+  }));
+}
+document.querySelectorAll('tbody').forEach(tb => new MutationObserver(() => etiquetar(tb)).observe(tb, {childList: true}));
 const fmt = ms => ms ? new Date(ms).toLocaleString('es-AR', {hourCycle: 'h23'}) : '<span class="mut">—</span>';
 
 // --- Contador de días offline (se calcula en vivo al abrir la página) ---
@@ -415,7 +514,7 @@ function fmtMin(m){
 const total = DATA.length, on = DATA.filter(d => d.online).length, off = total - on;
 const pct = total ? on * 100 / total : 0;
 const col = pct >= 95 ? 'ok' : (pct >= 90 ? 'warn' : 'bad');
-const colHex = pct >= 95 ? '#1b9a4a' : (pct >= 90 ? '#e08a00' : '#d32f2f');
+const colHex = pct >= 95 ? '#16a34a' : (pct >= 90 ? '#d97706' : '#dc2626');
 $('kTotal').textContent = total;
 $('kOn').textContent = on;
 $('kOff').textContent = off;
@@ -449,10 +548,25 @@ function cmp(a, b){
   return (Number(x) - Number(y)) * sortD;
 }
 
+const VISTAS = {
+  todas: ['Todas las cámaras', 'Estado de cada cámara por punto de venta'],
+  off:   ['Cámaras offline', 'Cámaras sin conexión en este momento'],
+  sd:    ['Problemas de SD', 'Cámaras con la tarjeta de memoria faltante, llena o dañada'],
+  stats: ['Estadísticas de conexión', 'Cortes, horarios y patrones de cada cámara y sucursal'],
+  inc:   ['Incidencias', 'Tickets de monday cruzados con el estado de las cámaras'],
+};
+$('nOff').textContent = DATA.filter(d => !d.online).length || '';
+$('nSd').textContent = DATA.filter(d => d.tipo === 'SD').length || '';
+$('nInc').textContent = (STATS.inc && STATS.inc.abiertos) || '';
 function marcar(n){
   ['todas','off','sd','stats','inc'].forEach(x => $('v-' + x).classList.toggle('act', x === n));
 }
 function vista(n){
+  if (!VISTAS[n]) n = 'todas';
+  $('titulo').textContent = VISTAS[n][0];
+  $('subtit').textContent = VISTAS[n][1];
+  try { history.replaceState(null, '', n === 'todas' ? location.pathname : '#' + n); } catch (e) {}
+  window.scrollTo(0, 0);
   $('secStats').hidden = n !== 'stats';
   $('secInc').hidden = n !== 'inc';
   $('secCam').hidden = n === 'stats' || n === 'inc';
@@ -511,7 +625,7 @@ $('sMicro').textContent = STATS.micro + ' micro-cortes (< 10 min)';
   const mx = Math.max(1, ...STATS.hora_off, ...STATS.hora_on);
   $('gHoras').innerHTML = STATS.hora_off.map((v, h) =>
     `<div class="h" title="${String(h).padStart(2,'0')} h: ${v} cortes, ${STATS.hora_on[h]} vueltas">` +
-    `<b style="height:${v*100/mx}%;background:#d32f2f"></b><b style="height:${STATS.hora_on[h]*100/mx}%;background:#1b9a4a"></b>` +
+    `<b style="height:${v*100/mx}%;background:#dc2626"></b><b style="height:${STATS.hora_on[h]*100/mx}%;background:#16a34a"></b>` +
     `<span>${h % 3 === 0 ? String(h).padStart(2,'0') : ''}</span></div>`).join('');
   const mt = Math.max(1, ...STATS.tramos.map(t => t[1]));
   $('gTramos').innerHTML = STATS.tramos.map(([n, v]) =>
@@ -569,7 +683,7 @@ if (INC) {
     return pares.map(([n, v]) => `<div class="tr"><span class="n" style="width:170px">${n}</span><span class="b"><i style="width:${v*100/m}%;background:${color}"></i></span><span class="c">${v}</span></div>`).join(''); };
   $('gCats').innerHTML = barras(INC.cats, '#ff7a00') + (INC.problemas.length ? '<div class="mini" style="margin-top:10px">Principal problema cargado en monday: ' + INC.problemas.map(p => p[0] + ' ' + p[1]).join(' · ') + '</div>' : '');
   const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  $('gMeses').innerHTML = barras(INC.meses.map(([m, v]) => [MES[+m.slice(5,7)-1] + ' ' + m.slice(2,4), v]), '#3e299b');
+  $('gMeses').innerHTML = barras(INC.meses.map(([m, v]) => [MES[+m.slice(5,7)-1] + ' ' + m.slice(2,4), v]), '#5b47c7');
 } else {
   $('iDesde').textContent = 'Todavía no está conectado monday.';
 }
@@ -597,6 +711,7 @@ function pintarInc(){
 }
 ['iq','iF'].forEach(id => $(id).addEventListener('input', pintarInc));
 pintarInc();
+vista(location.hash.slice(1));
 </script></body></html>"""
 
 fecha = datetime.now(ZoneInfo("America/Argentina/Cordoba")).strftime("%d/%m/%Y %H:%M")
