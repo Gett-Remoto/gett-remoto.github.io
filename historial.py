@@ -118,34 +118,37 @@ def calcular(hist, camaras, ahora_ms):
     hora_off, hora_on = [0] * 24, [0] * 24
     calor = [[0] * 24 for _ in range(7)]      # lunes=0 .. domingo=6
     duraciones, tramos = [], Counter()
-    n_noct = n_micro = 0
+    n_noct = n_micro = n_reales = 0
 
     estado = {c["id"]: c for c in camaras}
     for dev_id, d in hist["dispositivos"].items():
         cam = estado.get(dev_id)
-        if cam is None:
-            continue                            # dado de baja / ya no está en Tuya
+        if cam is None or not es_camara(cam):
+            continue                            # dado de baja, o sensor / control de aire
         eps = episodios(d["ev"])
-        cerrados = [(a, b) for a, b in eps if b is not None]
+        todos = [(a, b, (b - a) / 60000) for a, b in eps if b is not None]
+        micro = sum(1 for *_, m in todos if m < MICRO_MIN)
+        # Corte "real" = duró 10 min o más (o sigue cortado). Los micro-cortes se cuentan aparte.
+        reales = [(a, b) for a, b in eps if b is None or (b - a) / 60000 >= MICRO_MIN]
+        cerrados = [(a, b) for a, b in reales if b is not None]
         mins = [(b - a) / 60000 for a, b in cerrados]
         noct = sum(1 for a, b in cerrados if es_nocturno(a, b))
-        micro = sum(1 for m in mins if m < MICRO_MIN)
         n_noct += noct
         n_micro += micro
+        n_reales += len(reales)
         duraciones += mins
-        for m in mins:
+        for *_, m in todos:
             tramos[_tramo(m)] += 1
         horas = Counter()
-        for t, e in d["ev"]:
-            h = _hora(t)
-            if e == OFFLINE:
-                hora_off[h.hour] += 1
-                calor[h.weekday()][h.hour] += 1
-                horas[h.hour] += 1
-            else:
-                hora_on[h.hour] += 1
+        for a, b in reales:
+            h = _hora(a)
+            hora_off[h.hour] += 1
+            calor[h.weekday()][h.hour] += 1
+            horas[h.hour] += 1
+            if b is not None:
+                hora_on[_hora(b).hour] += 1
         tip = horas.most_common(1)
-        n_off = sum(horas.values())
+        n_off = len(reales)
 
         # Desde cuándo está offline ahora (para el contador de días)
         desde, aprox = None, False
@@ -155,14 +158,16 @@ def calcular(hist, camaras, ahora_ms):
             elif cam.get("corte"):
                 desde = cam["corte"]
             else:
-                desde, aprox = d.get("off_visto"), True
+                # Sin evento de corte en el historial: está caída desde ANTES de lo que cubre el historial.
+                cotas = [x for x in (d.get("off_visto"), d.get("cubierto")) if x]
+                desde, aprox = (min(cotas) if cotas else None), True
 
         patron = ""
         if len(cerrados) >= 3 and noct / len(cerrados) >= 0.5:
             patron = "Apaga de noche / vuelve al abrir"
         elif tip and n_off >= 4 and tip[0][1] / n_off >= 0.5:
             patron = f"Se corta casi siempre a las {tip[0][0]:02d} h"
-        elif len(cerrados) >= 5 and micro / len(cerrados) >= 0.6:
+        elif micro >= 10 and micro >= len(todos) * 0.6:
             patron = "Micro-cortes frecuentes (señal / wifi)"
 
         filas.append({
@@ -183,12 +188,24 @@ def calcular(hist, camaras, ahora_ms):
         "filas": filas,
         "hora_off": hora_off, "hora_on": hora_on, "calor": calor,
         "tramos": [[k, tramos.get(k, 0)] for k in TRAMOS],
-        "total_cortes": sum(hora_off), "total_vueltas": len(duraciones),
+        "total_cortes": n_reales, "total_vueltas": len(duraciones),
         "mediana": round(median(duraciones)) if duraciones else None,
         "pct_rapidas": round(sum(1 for m in duraciones if m < 60) * 100 / len(duraciones)) if duraciones else None,
         "nocturnos": n_noct, "micro": n_micro,
         "cam_patron": sum(1 for f in filas if f["patron"]),
     }
+
+
+# Dispositivos que no son cámaras (sensores de temperatura, controles de aire): no entran en las estadísticas.
+NO_CAMARA_PALABRAS = {"sensor", "temp", "temp.", "temperatura", "temperature", "aire", "air"}
+NO_CAMARA_TEXTO = ("空调", "温湿度", "传感器", "遥控")
+
+
+def es_camara(cam):
+    txt = (cam.get("nombre", "") + " " + cam.get("modelo", "")).lower()
+    if any(t in txt for t in NO_CAMARA_TEXTO):
+        return False
+    return not (set(txt.replace("-", " ").split()) & NO_CAMARA_PALABRAS)
 
 
 TRAMOS = ["< 10 min", "10-60 min", "1-6 h", "6-24 h", "1-3 días", "3-7 días", "> 7 días"]

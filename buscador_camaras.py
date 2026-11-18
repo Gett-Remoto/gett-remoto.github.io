@@ -144,6 +144,7 @@ with ThreadPoolExecutor(max_workers=HILOS) as ex:
         dev = historial.sumar_eventos(HIST, c, eventos or [], AHORA)
         if eventos is not None:
             dev["consultado"] = AHORA
+            dev.setdefault("cubierto", AHORA - DIAS_LOG * 86400 * 1000)   # desde cuándo hay datos
             consultas += 1
         dev["online"] = c["online"]
         if not c["online"]:
@@ -295,13 +296,13 @@ tr:hover td{background:#f4f2ff}
   <h2>Estadísticas de conexión</h2>
   <p class="sub" id="sDesde"></p>
   <div class="kpis">
-    <div class="kpi"><div class="l">Cortes registrados</div><div class="v" id="sCortes"></div><div class="mini" id="sVueltas"></div></div>
+    <div class="kpi"><div class="l">Cortes reales (10 min o más)</div><div class="v" id="sCortes"></div><div class="mini" id="sVueltas"></div></div>
     <div class="kpi"><div class="l">Tiempo típico en volver (mediana)</div><div class="v" id="sMed"></div><div class="mini" id="sRap"></div></div>
     <div class="kpi"><div class="l">Cortes por horario del local</div><div class="v warn" id="sNoct"></div><div class="mini">se apaga de noche y vuelve al abrir</div></div>
     <div class="kpi"><div class="l">Cámaras con patrón repetido</div><div class="v" id="sPat"></div><div class="mini" id="sMicro"></div></div>
   </div>
   <div class="grid2">
-    <div class="card"><h3>¿A qué hora se cortan y a qué hora vuelven?</h3>
+    <div class="card"><h3>¿A qué hora se cortan y a qué hora vuelven? <span class="mut" style="font-weight:400;font-size:13px">(cortes de 10 min o más)</span></h3>
       <div class="ley"><span><i style="background:#d32f2f"></i>Se desconecta</span><span><i style="background:#1b9a4a"></i>Vuelve a conectarse</span></div>
       <div id="gHoras" class="horas"></div></div>
     <div class="card"><h3>¿Cuánto tardan en volver?</h3><div id="gTramos"></div></div>
@@ -316,7 +317,8 @@ tr:hover td{background:#f4f2ff}
     <th data-s="nombre">Nombre<span class="fl"></span></th>
     <th data-s="loc">Locación<span class="fl"></span></th>
     <th data-s="dias">Días offline<span class="fl"></span></th>
-    <th data-s="cortes">Cortes<span class="fl"></span></th>
+    <th data-s="cortes">Cortes (10 min o más)<span class="fl"></span></th>
+    <th data-s="micro">Micro-cortes<span class="fl"></span></th>
     <th data-s="vueltas">Volvió sola / reconectada<span class="fl"></span></th>
     <th data-s="med">Tiempo típico en volver<span class="fl"></span></th>
     <th data-s="max">Corte más largo<span class="fl"></span></th>
@@ -480,7 +482,7 @@ function pintarStats(){
   });
   document.querySelectorAll('th[data-s]').forEach(th => th.querySelector('.fl').textContent = th.dataset.s === sK ? (sD === 1 ? ' ▲' : ' ▼') : '');
   $('stb').innerHTML = r.map(f => `<tr><td>${f.nombre}</td><td>${f.loc}</td><td>${fmtDias(f.dias, f.aprox)}</td>
-    <td>${f.cortes}</td><td>${f.vueltas}</td><td>${fmtMin(f.med)}</td><td>${fmtMin(f.max)}</td>
+    <td>${f.cortes}</td><td>${f.micro || '<span class="mut">0</span>'}</td><td>${f.vueltas}</td><td>${fmtMin(f.med)}</td><td>${fmtMin(f.max)}</td>
     <td>${f.hora === null ? '<span class="mut">—</span>' : String(f.hora).padStart(2,'0') + ' h <span class="mut">(' + f.hora_pct + '%)</span>'}</td>
     <td>${f.noct || '<span class="mut">0</span>'}</td>
     <td>${f.patron ? '<span class="chip c-pat">' + f.patron + '</span>' : '<span class="mut">—</span>'}</td></tr>`).join('');
