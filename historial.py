@@ -119,6 +119,7 @@ def calcular(hist, camaras, ahora_ms):
     calor = [[0] * 24 for _ in range(7)]      # lunes=0 .. domingo=6
     duraciones, tramos = [], Counter()
     n_noct = n_micro = n_reales = 0
+    por_loc = {}
 
     estado = {c["id"]: c for c in camaras}
     for dev_id, d in hist["dispositivos"].items():
@@ -126,6 +127,7 @@ def calcular(hist, camaras, ahora_ms):
         if cam is None or not es_camara(cam):
             continue                            # dado de baja, o sensor / control de aire
         eps = episodios(d["ev"])
+        por_loc.setdefault(cam["locacion"].strip(), {})[dev_id] = (cam, eps)
         todos = [(a, b, (b - a) / 60000) for a, b in eps if b is not None]
         micro = sum(1 for *_, m in todos if m < MICRO_MIN)
         # Corte "real" = duró 10 min o más (o sigue cortado). Los micro-cortes se cuentan aparte.
@@ -182,7 +184,7 @@ def calcular(hist, camaras, ahora_ms):
             "patron": patron, "desde": desde, "aprox": aprox,
         })
 
-    return {
+    stats = {
         "generado": ahora_ms,
         "hist_desde": hist["desde"],
         "filas": filas,
@@ -194,6 +196,170 @@ def calcular(hist, camaras, ahora_ms):
         "nocturnos": n_noct, "micro": n_micro,
         "cam_patron": sum(1 for f in filas if f["patron"]),
     }
+    stats["sucursales"] = sucursales(por_loc)
+    stats["analisis"] = analisis(stats, camaras, ahora_ms)
+    return stats
+
+
+# ---------------------------------------------------------------- sucursales
+JUNTOS_MIN = 3          # dos cámaras que se cortan con menos de 3 min de diferencia = corte de la sucursal
+DIA = set(range(9, 20))  # 9 a 19 h: horario en que los locales suelen estar abiertos
+
+
+def sucursales(por_loc):
+    """Busca cortes en los que TODAS las cámaras de la sucursal se caen juntas.
+    Si pasa seguido, el problema es del local (internet o energía) y no de una cámara."""
+    res = []
+    for loc, cams in por_loc.items():
+        if len(cams) < 2:
+            continue
+        inicios = sorted((a, dev, b) for dev, (_, eps) in cams.items() for a, b in eps)
+        grupos, actual = [], []
+        for a, dev, b in inicios:
+            if actual and a - actual[0][0] > JUNTOS_MIN * 60000:
+                grupos.append(actual)
+                actual = []
+            actual.append((a, dev, b))
+        if actual:
+            grupos.append(actual)
+        juntos = [g for g in grupos if len({dev for _, dev, _ in g}) >= 2]
+        if not grupos:
+            continue
+        dia = noche = micro = 0
+        for g in juntos:
+            a = g[0][0]
+            fines = [b for *_, b in g if b]
+            dur = (max(fines) - a) / 60000 if len(fines) == len(g) else None
+            if dur is not None and dur < MICRO_MIN:
+                micro += 1
+            elif _hora(a).hour in DIA:
+                dia += 1
+            else:
+                noche += 1
+        pct = round(len(juntos) * 100 / len(grupos))
+        ahora_off = all(not c["online"] for c, _ in cams.values())
+        diag = ""
+        if len(juntos) >= 3 and pct >= 40:
+            if micro >= max(dia, noche) and micro >= 3:
+                diag = "Internet inestable del local (micro-cortes en todas las cámaras a la vez)"
+            elif dia >= noche:
+                diag = "Internet del local se cae en horario de atención"
+            else:
+                diag = "Se corta la luz / internet del local de noche"
+        elif ahora_off:
+            diag = "Todas las cámaras offline ahora (revisar internet o energía)"
+        if not diag:
+            continue
+        res.append({"loc": loc, "camaras": len(cams), "eventos": len(grupos), "juntos": len(juntos),
+                    "pct": pct, "dia": dia, "noche": noche, "micro": micro,
+                    "ahora_off": ahora_off, "diag": diag})
+    res.sort(key=lambda r: (-r["juntos"], -r["pct"]))
+    return res
+
+
+# ---------------------------------------------------------------- análisis escrito
+def _fmt_min(m):
+    if m is None:
+        return "sin dato"
+    if m < 60:
+        return f"{round(m)} minutos"
+    if m < 1440:
+        h = m / 60
+        return f"{h:.0f} horas" if h >= 2 else "1 hora"
+    return f"{m / 1440:.1f} días".replace(".0 ", " ")
+
+
+def _franja(horas, n=3):
+    top = sorted(range(24), key=lambda h: -horas[h])[:n]
+    return ", ".join(f"{h:02d} h" for h in sorted(top))
+
+
+def analisis(s, camaras, ahora_ms):
+    """Lectura en lenguaje simple. Devuelve una lista de [título, texto] (el texto puede tener <b>)."""
+    F = s["filas"]
+    out = []
+    dias_hist = (ahora_ms - s["hist_desde"]) / 86400000 if s["hist_desde"] else 0
+    total_cam = len(F)
+    on = sum(1 for f in F if f["online"])
+    todos_cortes = s["total_cortes"] + s["micro"]
+
+    if dias_hist < 1 or not todos_cortes:
+        return [["Todavía no hay datos suficientes",
+                 "El historial se empezó a juntar recién. En unos días aparece acá la lectura de los datos."]]
+
+    out.append(["Panorama general",
+        f"Hay <b>{total_cam} cámaras</b> y ahora están online <b>{on}</b> ({round(on * 100 / total_cam)}%). "
+        f"En los últimos <b>{dias_hist:.0f} días</b> hubo <b>{todos_cortes} caídas</b>, pero "
+        f"<b>{round(s['micro'] * 100 / todos_cortes)}% fueron micro-cortes</b> de menos de 10 minutos: "
+        f"la cámara se cae y vuelve sola casi enseguida. Sacando eso quedan <b>{s['total_cortes']} cortes reales</b>; "
+        f"la mitad vuelve en menos de <b>{_fmt_min(s['mediana'])}</b> y el {s['pct_rapidas']}% en menos de una hora."])
+
+    off_noche = sum(s["hora_off"][h] for h in NOCHE_INI) / max(1, sum(s["hora_off"]))
+    on_manana = sum(s["hora_on"][h] for h in MANANA_FIN) / max(1, sum(s["hora_on"]))
+    lectura = (" Es decir: muchas cámaras se apagan cuando cierra el local y vuelven cuando abre, no porque fallen."
+               if off_noche >= 0.4 and on_manana >= 0.4 else
+               " No se ve un patrón claro de cierre y apertura: los cortes están repartidos en el día.")
+    out.append(["¿Cuándo se cortan y cuándo vuelven?",
+        f"Los cortes reales se concentran a las <b>{_franja(s['hora_off'])}</b> y las vueltas a las "
+        f"<b>{_franja(s['hora_on'])}</b>. El {round(off_noche * 100)}% de los cortes empieza de noche (19 a 3 h) y "
+        f"el {round(on_manana * 100)}% de las vueltas es a la mañana (6 a 12 h).{lectura} "
+        f"Cuando un corte empieza a la noche y termina a la mañana lo marco como <b>corte por horario del local</b>: "
+        f"hubo {s['nocturnos']} así."])
+
+    noct = [f for f in F if f["patron"].startswith("Apaga")]
+    if noct:
+        ej = ", ".join(sorted({f["loc"].split(".", 1)[-1].strip() for f in noct})[:8])
+        out.append(["Locales que apagan de noche",
+            f"<b>{len(noct)} cámaras</b> se apagan casi todas las noches y vuelven a la mañana (por ejemplo: {ej}). "
+            "Probablemente cortan la luz o el router al cerrar. No es una falla de la cámara, pero mientras "
+            "están apagadas <b>no graban</b>: si se quiere grabación nocturna hay que pedirle al local que deje "
+            "el router y las cámaras enchufadas."])
+
+    suc = s["sucursales"]
+    inet = [x for x in suc if x["diag"].startswith("Internet")]
+    if inet:
+        ej = ", ".join(x["loc"].split(".", 1)[-1].strip() for x in inet[:6])
+        out.append(["Sucursales con internet inestable",
+            f"En <b>{len(inet)} sucursales</b> las cámaras se caen <b>todas a la vez</b> una y otra vez "
+            f"(por ejemplo: {ej}). Cuando las dos cámaras se cortan juntas el problema no es de la cámara: "
+            "es el <b>internet o el wifi del local</b>. Ahí no sirve reiniciar la cámara; conviene hablar con el "
+            "local por su proveedor de internet, revisar el router o cablear con RJ45."])
+
+    micro = sorted([f for f in F if f["patron"].startswith("Micro")], key=lambda f: -f["micro"])
+    if micro:
+        ej = ", ".join(f"{f['nombre'].strip()} ({f['micro']})" for f in micro[:4])
+        out.append(["Cámaras que se reconectan todo el tiempo",
+            f"<b>{len(micro)} cámaras</b> tienen micro-cortes muy seguidos, sobre todo {ej}. "
+            "Si solo le pasa a una cámara del local, suele ser <b>mala señal de wifi</b> en ese punto "
+            "(lejos del router, paredes, metal). Un repetidor o un cable suele solucionarlo. "
+            "Ojo: estas cámaras pueden figurar Online y aun así tener huecos en la grabación."])
+
+    off = [f for f in F if not f["online"]]
+    off7 = [f for f in off if f["desde"] and (ahora_ms - f["desde"]) / 86400000 >= 7]
+    off2 = [f for f in off if f["desde"] and (ahora_ms - f["desde"]) / 86400000 >= 2]
+    if off:
+        out.append(["Cámaras caídas hace días",
+            f"Hay <b>{len(off)} cámaras offline</b>; <b>{len(off2)}</b> llevan más de 2 días y "
+            f"<b>{len(off7)}</b> más de una semana. Las que pasan los 2 días casi nunca vuelven solas: "
+            "son las que hay que priorizar con un contacto al local (el contador está en la columna Días offline)."])
+
+    dias = [sum(x) for x in s["calor"]]
+    if sum(dias):
+        nom = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+        out.append(["Días de la semana",
+            f"El día con más cortes es el <b>{nom[dias.index(max(dias))]}</b> y el más tranquilo el "
+            f"<b>{nom[dias.index(min(dias))]}</b>."])
+
+    out.append(["Qué haría",
+        "1) Contactar primero las cámaras con más de 2 días offline. "
+        "2) En las sucursales con internet inestable, no mandar el paso a paso de reinicio: pedir que revisen el "
+        "internet o el router. 3) En las que apagan de noche, avisar que así no graban de noche. "
+        "4) Las que se reconectan todo el tiempo, revisar la señal de wifi o cablearlas."])
+    if dias_hist < 14:
+        out.append(["Ojo con los números",
+            f"Por ahora hay solo {dias_hist:.0f} días de historial. Los patrones se vuelven confiables a partir de "
+            "2 o 3 semanas; el historial se sigue sumando solo en cada actualización."])
+    return out
 
 
 # Dispositivos que no son cámaras (sensores de temperatura, controles de aire): no entran en las estadísticas.

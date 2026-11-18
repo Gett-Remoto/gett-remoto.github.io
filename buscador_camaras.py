@@ -240,6 +240,10 @@ tr:hover td{background:#f4f2ff}
 .calor{display:grid;grid-template-columns:44px repeat(24,1fr);gap:2px;font-size:11px;color:#4a5578}
 .calor div{height:22px;border-radius:3px;display:flex;align-items:center;justify-content:center}
 .chip.c-pat{background:#efe9ff;color:#3e299b}
+.lectura{border-left:5px solid #ff7a00}
+.lectura p{margin:0 0 12px;line-height:1.55;font-size:14.5px;max-width:1100px}
+.lectura p b.t{display:block;color:#1f1650;margin-bottom:2px}
+.lectura p:last-child{margin-bottom:0}
 @media(max-width:1100px){.grid2{grid-template-columns:1fr}}
 @media(max-width:900px){.side{display:none}main{margin-left:0;padding:84px 16px}.kpis{grid-template-columns:repeat(2,1fr)}}
 </style></head><body>
@@ -295,6 +299,7 @@ tr:hover td{background:#f4f2ff}
   <section id="secStats" hidden>
   <h2>Estadísticas de conexión</h2>
   <p class="sub" id="sDesde"></p>
+  <div class="card lectura"><h3>Lectura de los datos</h3><div id="sAnalisis"></div></div>
   <div class="kpis">
     <div class="kpi"><div class="l">Cortes reales (10 min o más)</div><div class="v" id="sCortes"></div><div class="mini" id="sVueltas"></div></div>
     <div class="kpi"><div class="l">Tiempo típico en volver (mediana)</div><div class="v" id="sMed"></div><div class="mini" id="sRap"></div></div>
@@ -308,6 +313,12 @@ tr:hover td{background:#f4f2ff}
     <div class="card"><h3>¿Cuánto tardan en volver?</h3><div id="gTramos"></div></div>
   </div>
   <div class="card"><h3>Desconexiones por día y hora</h3><div id="gCalor"></div></div>
+  <h2 style="margin-top:24px">Sucursales con problema de internet o energía</h2>
+  <p class="sub">Sucursales donde las cámaras se caen <b>todas a la vez</b> (con menos de 3 minutos de diferencia). Cuando pasa seguido, el problema es del local y no de la cámara.</p>
+  <div class="wrap" style="max-height:52vh"><table><thead><tr>
+    <th>Locación</th><th>Cámaras</th><th>Cortes juntos</th><th>% de coincidencia</th>
+    <th>En horario de atención</th><th>De noche</th><th>Micro-cortes juntos</th><th>Ahora</th><th>Diagnóstico</th>
+  </tr></thead><tbody id="sucTb"></tbody></table></div>
   <h2 style="margin-top:24px">Por cámara</h2>
   <div class="filtros">
     <input id="sq" placeholder="Buscar por nombre o locación...">
@@ -439,6 +450,13 @@ const DIAS_SEM = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 $('sDesde').textContent = STATS.hist_desde
   ? 'Historial acumulado desde el ' + new Date(STATS.hist_desde).toLocaleDateString('es-AR') + '. Cuantos más días pasen, más confiables son los números.'
   : 'Todavía no hay historial: se empieza a juntar en la próxima actualización.';
+$('sAnalisis').innerHTML = (STATS.analisis || []).map(([t, x]) => `<p><b class="t">${t}</b>${x}</p>`).join('');
+$('sucTb').innerHTML = (STATS.sucursales || []).map(s => `<tr><td>${s.loc}</td><td>${s.camaras}</td>
+  <td><b>${s.juntos}</b> <span class="mut">de ${s.eventos}</span></td><td>${s.pct}%</td>
+  <td>${s.dia || '<span class="mut">0</span>'}</td><td>${s.noche || '<span class="mut">0</span>'}</td><td>${s.micro || '<span class="mut">0</span>'}</td>
+  <td>${s.ahora_off ? '<span class="chip c-off">Todas offline</span>' : '<span class="chip c-on">Online</span>'}</td>
+  <td><span class="chip ${s.diag.startsWith('Internet') ? 'c-off' : (s.diag.startsWith('Todas') ? 'c-sd' : 'c-pat')}">${s.diag}</span></td></tr>`).join('')
+  || '<tr><td colspan="9" class="mut">Sin sucursales con cortes simultáneos repetidos.</td></tr>';
 $('sCortes').textContent = STATS.total_cortes;
 $('sVueltas').textContent = STATS.total_vueltas + ' volvieron a conectarse';
 $('sMed').innerHTML = fmtMin(STATS.mediana);
