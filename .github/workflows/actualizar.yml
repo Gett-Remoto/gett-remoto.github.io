@@ -41,7 +41,8 @@ jobs:
       - name: Proteger con contraseña
         run: |
           mkdir site
-          npx -y staticrypt buscador.html -p "$DASH_PASSWORD" --short -d site
+          # Salt fijo (no es secreto): así el "Remember me" sigue valiendo después de cada actualización
+          npx -y staticrypt buscador.html -p "$DASH_PASSWORD" --short -s 29c316e5f110ca9267fd9eedbe0ed82a -d site
           mv site/buscador.html site/index.html
         env:
           DASH_PASSWORD: ${{ secrets.DASH_PASSWORD }}
