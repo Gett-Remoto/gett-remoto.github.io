@@ -223,7 +223,8 @@ def sucursales(por_loc):
         if actual:
             grupos.append(actual)
         juntos = [g for g in grupos if len({dev for _, dev, _ in g}) >= 2]
-        if not grupos:
+        ahora_off = all(not c["online"] for c, _ in cams.values())
+        if not grupos and not ahora_off:
             continue
         dia = noche = micro = 0
         for g in juntos:
@@ -236,8 +237,7 @@ def sucursales(por_loc):
                 dia += 1
             else:
                 noche += 1
-        pct = round(len(juntos) * 100 / len(grupos))
-        ahora_off = all(not c["online"] for c, _ in cams.values())
+        pct = round(len(juntos) * 100 / len(grupos)) if grupos else 0
         diag = ""
         if len(juntos) >= 3 and pct >= 40:
             if micro >= max(dia, noche) and micro >= 3:
@@ -264,8 +264,8 @@ def _fmt_min(m):
     if m < 60:
         return f"{round(m)} minutos"
     if m < 1440:
-        h = m / 60
-        return f"{h:.0f} horas" if h >= 2 else "1 hora"
+        h = round(m / 60)
+        return f"{h} horas" if h >= 2 else "1 hora"
     return f"{m / 1440:.1f} días".replace(".0 ", " ")
 
 
@@ -292,7 +292,7 @@ def analisis(s, camaras, ahora_ms):
         f"En los últimos <b>{dias_hist:.0f} días</b> hubo <b>{todos_cortes} caídas</b>, pero "
         f"<b>{round(s['micro'] * 100 / todos_cortes)}% fueron micro-cortes</b> de menos de 10 minutos: "
         f"la cámara se cae y vuelve sola casi enseguida. Sacando eso quedan <b>{s['total_cortes']} cortes reales</b>; "
-        f"la mitad vuelve en menos de <b>{_fmt_min(s['mediana'])}</b> y el {s['pct_rapidas']}% en menos de una hora."])
+        f"la mitad vuelve en <b>{_fmt_min(s['mediana'])}</b> o menos, y solo el {s['pct_rapidas']}% vuelve en menos de una hora."])
 
     off_noche = sum(s["hora_off"][h] for h in NOCHE_INI) / max(1, sum(s["hora_off"]))
     on_manana = sum(s["hora_on"][h] for h in MANANA_FIN) / max(1, sum(s["hora_on"]))
