@@ -358,7 +358,7 @@ td:first-child{font-weight:500}
     <a id="v-stats" onclick="vista('stats')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 17v-5M13 17V8M18 17v-3"/></svg><span class="l">Estadísticas</span><span class="s">Estadísticas</span></a>
     <a id="v-inc" onclick="vista('inc')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M12 11v3M12 17h.01"/></svg><span class="l">Incidencias</span><span class="s">Incidencias</span><span class="cnt a" id="nInc"></span></a>
   </nav>
-  <div class="foot"><b>Datos al __FECHA__</b>Se actualiza a las 8:00 y 13:00</div>
+  <div class="foot"><b>Datos al __FECHA__</b>Se actualiza a las 8:00, 11:30 y 14:00</div>
 </div>
 
 <main>

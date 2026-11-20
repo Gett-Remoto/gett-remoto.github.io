@@ -2,7 +2,8 @@ name: Actualizar dashboard
 on:
   schedule:
     - cron: "0 11 * * *"   # 08:00 Argentina
-    - cron: "0 16 * * *"   # 13:00 Argentina
+    - cron: "30 14 * * *"  # 11:30 Argentina
+    - cron: "0 17 * * *"   # 14:00 Argentina
   workflow_dispatch:        # permite correrlo a mano
 
 permissions:
