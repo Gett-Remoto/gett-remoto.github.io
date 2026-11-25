@@ -10,7 +10,6 @@ from zoneinfo import ZoneInfo
 from tuya_connector import TuyaOpenAPI
 
 import historial
-import incidencias
 
 socket.setdefaulttimeout(20)
 
@@ -160,12 +159,6 @@ if BARRIDO:
 historial.guardar(HIST)
 STATS = historial.calcular(HIST, camaras, AHORA)
 print(f"Estadísticas: {STATS['total_cortes']} cortes en historial, {STATS['cam_patron']} cámaras con patrón.")
-INC = incidencias.calcular(incidencias.cargar_tickets(), [c for c in camaras if historial.es_camara(c)],
-                           STATS, datetime.now(ZoneInfo("America/Argentina/Cordoba")))
-STATS["inc"] = INC
-STATS["inc_analisis"] = incidencias.analisis(INC, STATS)
-if INC:
-    print(f"Incidencias: {INC['total']} tickets, {INC['abiertos']} abiertos, {INC['sin_ubicar']} sin ubicar en Tuya.")
 
 total = len(camaras)
 on = sum(1 for c in camaras if c["online"])
@@ -356,7 +349,6 @@ td:first-child{font-weight:500}
     <a id="v-off" onclick="vista('off')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 5.2-2.8M19 12.9a10 10 0 0 0-2.3-1.6M2 8.8a15 15 0 0 1 4.2-2.7M22 8.8A15 15 0 0 0 10.7 5M12 20h.01"/></svg><span class="l">Offline</span><span class="s">Offline</span><span class="cnt r" id="nOff"></span></a>
     <a id="v-sd" onclick="vista('sd')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM9 6v3M12 6v3M15 7v2"/></svg><span class="l">Problemas de SD</span><span class="s">SD</span><span class="cnt a" id="nSd"></span></a>
     <a id="v-stats" onclick="vista('stats')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 17v-5M13 17V8M18 17v-3"/></svg><span class="l">Estadísticas</span><span class="s">Estadísticas</span></a>
-    <a id="v-inc" onclick="vista('inc')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M12 11v3M12 17h.01"/></svg><span class="l">Incidencias</span><span class="s">Incidencias</span><span class="cnt a" id="nInc"></span></a>
   </nav>
   <div class="foot"><b>Datos al __FECHA__</b>Se actualiza a las 8:00, 11:30 y 14:00</div>
 </div>
@@ -436,40 +428,9 @@ td:first-child{font-weight:500}
     <th data-s="hora">Hora más frecuente de corte<span class="fl"></span></th>
     <th data-s="noct">Cortes nocturnos<span class="fl"></span></th>
     <th data-s="patron">Patrón detectado<span class="fl"></span></th>
-    <th data-s="tickets">Tickets en monday<span class="fl"></span></th>
   </tr></thead><tbody id="stb"></tbody></table></div>
   </section>
 
-  <section id="secInc" hidden>
-  <p class="sub" id="iDesde"></p>
-  <div class="card lectura"><h3>Lectura de las incidencias</h3><div id="iAnalisis"></div></div>
-  <div class="kpis">
-    <div class="kpi"><div class="l">Tickets en el historial</div><div class="v" id="iTotal"></div><div class="mini" id="iSem"></div></div>
-    <div class="kpi"><div class="l">Abiertos ahora</div><div class="v warn" id="iAb"></div><div class="mini" id="iOnl"></div></div>
-    <div class="kpi"><div class="l">Tiempo típico de resolución</div><div class="v" id="iRes"></div><div class="mini">de la apertura al cierre</div></div>
-    <div class="kpi"><div class="l">"Fuera de línea" con mal internet</div><div class="v bad" id="iFl"></div><div class="mini" id="iFl2"></div></div>
-  </div>
-  <div class="grid2">
-    <div class="card"><h3>¿Qué reportan los agentes de calidad?</h3><div id="gCats"></div></div>
-    <div class="card"><h3>Tickets por mes</h3><div id="gMeses"></div></div>
-  </div>
-  <h2>Por sucursal</h2>
-  <div class="filtros">
-    <input id="iq" placeholder="Buscar sucursal, cliente o texto del reporte...">
-    <select id="iF"><option value="">Todas</option><option value="ab">Con tickets abiertos</option><option value="cx">Con problema de conexión</option><option value="rep">4 tickets o más</option></select>
-  </div>
-  <div class="wrap"><table><thead><tr>
-    <th data-i="loc">Sucursal<span class="fl"></span></th>
-    <th data-i="cliente">Cliente<span class="fl"></span></th>
-    <th data-i="tickets">Tickets<span class="fl"></span></th>
-    <th data-i="abiertos">Abiertos<span class="fl"></span></th>
-    <th data-i="res_med">Resolución típica<span class="fl"></span></th>
-    <th>Lo que más reportan</th>
-    <th data-i="off_ahora">Cámaras offline ahora<span class="fl"></span></th>
-    <th>Conexión (dashboard)</th>
-    <th data-i="ult_fecha">Último reporte<span class="fl"></span></th>
-  </tr></thead><tbody id="itb"></tbody></table></div>
-  </section>
 </main>
 
 <script>
@@ -555,13 +516,11 @@ const VISTAS = {
   off:   ['Cámaras offline', 'Cámaras sin conexión en este momento'],
   sd:    ['Problemas de SD', 'Cámaras con la tarjeta de memoria faltante, llena o dañada'],
   stats: ['Estadísticas de conexión', 'Cortes, horarios y patrones de cada cámara y sucursal'],
-  inc:   ['Incidencias', 'Tickets de monday cruzados con el estado de las cámaras'],
 };
 $('nOff').textContent = DATA.filter(d => !d.online).length || '';
 $('nSd').textContent = DATA.filter(d => d.tipo === 'SD').length || '';
-$('nInc').textContent = (STATS.inc && STATS.inc.abiertos) || '';
 function marcar(n){
-  ['todas','off','sd','stats','inc'].forEach(x => $('v-' + x).classList.toggle('act', x === n));
+  ['todas','off','sd','stats'].forEach(x => $('v-' + x).classList.toggle('act', x === n));
 }
 function vista(n){
   if (!VISTAS[n]) n = 'todas';
@@ -570,9 +529,8 @@ function vista(n){
   try { history.replaceState(null, '', n === 'todas' ? location.pathname : '#' + n); } catch (e) {}
   window.scrollTo(0, 0);
   $('secStats').hidden = n !== 'stats';
-  $('secInc').hidden = n !== 'inc';
-  $('secCam').hidden = n === 'stats' || n === 'inc';
-  if (n === 'stats' || n === 'inc') { marcar(n); return; }
+  $('secCam').hidden = n === 'stats';
+  if (n === 'stats') { marcar(n); return; }
   $('q').value = ''; $('fModelo').value = '';
   $('fEstado').value = (n === 'off') ? 'off' : '';
   $('fTipo').value = (n === 'sd') ? 'SD' : '';
@@ -661,58 +619,10 @@ function pintarStats(){
     <td>${f.cortes}</td><td>${f.micro || '<span class="mut">0</span>'}</td><td>${f.vueltas}</td><td>${fmtMin(f.med)}</td><td>${fmtMin(f.max)}</td>
     <td>${f.hora === null ? '<span class="mut">—</span>' : String(f.hora).padStart(2,'0') + ' h <span class="mut">(' + f.hora_pct + '%)</span>'}</td>
     <td>${f.noct || '<span class="mut">0</span>'}</td>
-    <td>${f.patron ? '<span class="chip c-pat">' + f.patron + '</span>' : '<span class="mut">—</span>'}</td>
-    <td>${vacio(f.tickets) ? '<span class="mut">—</span>' : f.tickets + (f.tickets_ab ? ' <span class="warn">(' + f.tickets_ab + ' abiertos)</span>' : '')}</td></tr>`).join('');
+    <td>${f.patron ? '<span class="chip c-pat">' + f.patron + '</span>' : '<span class="mut">—</span>'}</td></tr>`).join('');
 }
 ['sq','sPatF'].forEach(id => $(id).addEventListener('input', pintarStats));
 pintarStats();
-
-// ================= Incidencias (monday) =================
-const INC = STATS.inc;
-$('iAnalisis').innerHTML = (STATS.inc_analisis || []).map(([t, x]) => `<p><b class="t">${t}</b>${x}</p>`).join('');
-if (INC) {
-  const fd = s => s ? s.slice(8,10) + '/' + s.slice(5,7) + '/' + s.slice(0,4) : '';
-  $('iDesde').textContent = 'Tickets del tablero Incidencias Cámaras desde el ' + fd(INC.desde) + ', unidos a cada sucursal y cámara del dashboard.'
-    + (INC.sin_ubicar ? ' (' + INC.sin_ubicar + ' tickets no se pudieron ubicar en Tuya: nombre o posición distinta.)' : '');
-  $('iTotal').textContent = INC.total;
-  $('iSem').textContent = INC.ultima_semana + ' en los últimos 7 días';
-  $('iAb').textContent = INC.abiertos;
-  $('iOnl').textContent = INC.online_con_ticket ? INC.online_con_ticket + ' de "fuera de línea" ya están online' : '';
-  $('iRes').textContent = INC.res_mediana === null ? '—' : INC.res_mediana + ' días';
-  $('iFl').textContent = INC.fl_mala;
-  $('iFl2').textContent = 'de ' + INC.fl_abiertos + ' tickets abiertos de fuera de línea';
-  const barras = (pares, color) => { const m = Math.max(1, ...pares.map(p => p[1]));
-    return pares.map(([n, v]) => `<div class="tr"><span class="n" style="width:170px">${n}</span><span class="b"><i style="width:${v*100/m}%;background:${color}"></i></span><span class="c">${v}</span></div>`).join(''); };
-  $('gCats').innerHTML = barras(INC.cats, '#ff7a00') + (INC.problemas.length ? '<div class="mini" style="margin-top:10px">Principal problema cargado en monday: ' + INC.problemas.map(p => p[0] + ' ' + p[1]).join(' · ') + '</div>' : '');
-  const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  $('gMeses').innerHTML = barras(INC.meses.map(([m, v]) => [MES[+m.slice(5,7)-1] + ' ' + m.slice(2,4), v]), '#5b47c7');
-} else {
-  $('iDesde').textContent = 'Todavía no está conectado monday.';
-}
-let iK = 'tickets', iD = -1;
-document.querySelectorAll('th[data-i]').forEach(th => th.addEventListener('click', () => {
-  const k = th.dataset.i; if (iK !== k) { iK = k; iD = -1; } else iD = -iD; pintarInc();
-}));
-function pintarInc(){
-  if (!INC) { $('itb').innerHTML = ''; return; }
-  const t = $('iq').value.toLowerCase(), f = $('iF').value;
-  const r = INC.sucursales.filter(s => (s.loc + ' ' + s.cliente + ' ' + s.ult_texto).toLowerCase().includes(t) &&
-    (!f || (f === 'ab' ? s.abiertos : f === 'cx' ? (s.conexion || s.micro >= 10) : s.tickets >= 4)));
-  r.sort((a, b) => { const x = a[iK], y = b[iK];
-    if (vacio(x) && vacio(y)) return 0; if (vacio(x)) return 1; if (vacio(y)) return -1;
-    return (typeof x === 'string' ? x.localeCompare(y, 'es', {numeric: true}) : x - y) * iD; });
-  document.querySelectorAll('th[data-i]').forEach(th => th.querySelector('.fl').textContent = th.dataset.i === iK ? (iD === 1 ? ' ▲' : ' ▼') : '');
-  const fd = s => s.slice(8,10) + '/' + s.slice(5,7) + '/' + s.slice(2,4);
-  $('itb').innerHTML = r.map(s => `<tr><td>${s.loc}</td><td>${s.cliente || '<span class="mut">—</span>'}</td>
-    <td><b>${s.tickets}</b></td><td>${s.abiertos ? '<span class="chip c-sd">' + s.abiertos + '</span>' : '<span class="mut">0</span>'}</td>
-    <td>${s.res_med === null ? '<span class="mut">—</span>' : s.res_med + ' días'}</td>
-    <td>${s.cats.map(([c, v]) => '<span class="chip c-pat" style="margin:1px">' + c + ' ' + v + '</span>').join(' ') || '<span class="mut">—</span>'}</td>
-    <td>${s.off_ahora ? '<span class="bad">' + s.off_ahora + ' de ' + s.n_cams + '</span>' : '<span class="ok">0 de ' + s.n_cams + '</span>'}</td>
-    <td>${s.conexion ? '<span class="chip c-off">' + s.conexion + '</span>' : (s.micro >= 10 ? '<span class="chip c-sd">' + s.micro + ' micro-cortes</span>' : '<span class="mut">OK</span>')}</td>
-    <td style="white-space:normal;min-width:320px"><b>${fd(s.ult_fecha)}</b> <span class="mut">${s.ult_texto.replace(/</g,'&lt;')}</span></td></tr>`).join('');
-}
-['iq','iF'].forEach(id => $(id).addEventListener('input', pintarInc));
-pintarInc();
 vista(location.hash.slice(1));
 </script></body></html>"""
 
