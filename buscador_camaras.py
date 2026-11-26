@@ -19,7 +19,7 @@ ACCESS_KEY = os.environ["TUYA_ACCESS_KEY"]
 ENDPOINT   = "https://openapi.tuyaus.com"
 UIDS       = [u.strip() for u in os.environ["TUYA_UIDS"].split(",") if u.strip()]
 DIAS_LOG   = 7      # cuántos días atrás guarda Tuya los eventos (se suman al historial propio)
-HORAS_BARRIDO = 20  # cada cuántas horas se piden los eventos de TODAS las cámaras
+HORAS_BARRIDO = 72  # cada cuántas horas se piden los eventos de TODAS las cámaras (Tuya guarda 7 días)
 HILOS      = 5      # consultas en paralelo (si Tuya da error de límite, bajalo a 2)
 LOGOS      = ["logo-blanco.png", "logo.png", "logo.svg", "logo.jpg", "logo.jpeg"]
 # ==============================================================================
@@ -28,6 +28,16 @@ print("1. Conectando a Tuya...")
 api = TuyaOpenAPI(ENDPOINT, ACCESS_ID, ACCESS_KEY)
 api.connect()
 print("2. Conectado.")
+
+# Contador de consultas: el plan de Tuya tiene cuota limitada
+import threading
+_lock, CONSULTAS_API = threading.Lock(), [0]
+_get = api.get
+def _get_contado(*a, **k):
+    with _lock:
+        CONSULTAS_API[0] += 1
+    return _get(*a, **k)
+api.get = _get_contado
 
 # ---------- Paso 1: lista de dispositivos ----------
 items = []
@@ -66,10 +76,10 @@ def leer_status(d):
 
 AHORA = int(time.time() * 1000)
 HIST = historial.cargar()
-# Barrido completo (eventos de TODAS las cámaras) una vez por día; en la otra corrida
-# solo las offline o las que cambiaron de estado, para no gastar cuota de la API de Tuya.
+# Barrido completo (eventos de TODAS las cámaras) cada HORAS_BARRIDO; en las demás corridas
+# solo las que cambiaron de estado o nunca se consultaron, para no gastar cuota de la API de Tuya.
 BARRIDO = AHORA - HIST.get("ultimo_barrido", 0) > HORAS_BARRIDO * 3600 * 1000
-print(f"   Modo: {'barrido completo de eventos' if BARRIDO else 'solo offline / con cambios'}")
+print(f"   Modo: {'barrido completo de eventos' if BARRIDO else 'solo con cambios'}")
 
 def traer_eventos(dev_id):
     """Eventos online(1)/offline(2) desde la última consulta (máx. DIAS_LOG días atrás)."""
@@ -117,7 +127,7 @@ def procesar(par):
 
     eventos = None
     previo = HIST["dispositivos"].get(d.get("id"), {})
-    if BARRIDO or not online or previo.get("online") != online:
+    if BARRIDO or previo.get("online") != online or not previo.get("consultado"):
         try:
             eventos = traer_eventos(d["id"])
         except Exception:
@@ -154,6 +164,7 @@ with ThreadPoolExecutor(max_workers=HILOS) as ex:
         if i % 50 == 0:
             print(f"   {i}/{len(items)}")
 print(f"   Eventos consultados para {consultas} dispositivos.")
+print(f"   Consultas a la API de Tuya en esta corrida: {CONSULTAS_API[0]}")
 if BARRIDO:
     HIST["ultimo_barrido"] = AHORA
 historial.guardar(HIST)
